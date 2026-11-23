@@ -127,7 +127,59 @@ def run_block_2():
     
     return sample
 
+# =============================================================================
+# БЛОК 3: Детекція та фільтрація аномальних вимірів (Outliers)
+# =============================================================================
+def run_block_3(base_sample):
+    print("=== БЛОК 3: Детекція та фільтрація аномалій (Outliers) ===")
+    x_base_mean = np.mean(base_sample)
+    S_base = np.std(base_sample, ddof=1)
+    
+    # 1. Додаємо 10 аномальних значень, що перевищують x_bar + 5S
+    threshold_outlier = x_base_mean + 5 * S_base
+    outliers = np.random.uniform(threshold_outlier + 50, threshold_outlier + 400, 10)
+    dirty_sample = np.concatenate([base_sample, outliers])
+    
+    # 2. Характеристики спотвореної вибірки (dirty)
+    x_dirty = np.mean(dirty_sample)
+    S_dirty = np.std(dirty_sample, ddof=1)
+    med_dirty = np.median(dirty_sample)
+    Q1_d, Q3_d = np.percentile(dirty_sample, [25, 75])
+    IQR_dirty = Q3_d - Q1_d
+    
+    print(f"Спотворена вибірка (n={len(dirty_sample)}):")
+    print(f"  x_dirty = {x_dirty:.2f} | S_dirty = {S_dirty:.2f} | Медіана = {med_dirty:.2f} | IQR = {IQR_dirty:.2f}")
+    
+    # 3. Межі Boxplot та фільтрація викидів
+    lower_bound = Q1_d - 1.5 * IQR_dirty
+    upper_bound = Q3_d + 1.5 * IQR_dirty
+    print(f"Межі нормальних значень за IQR: [{lower_bound:.2f}; {upper_bound:.2f}]")
+    
+    clean_sample = dirty_sample[(dirty_sample >= lower_bound) & (dirty_sample <= upper_bound)]
+    removed_count = len(dirty_sample) - len(clean_sample)
+    print(f"Виявлено та відфільтровано викидів: {removed_count}")
+    
+    # 4. Характеристики очищеної вибірки (clean)
+    x_clean = np.mean(clean_sample)
+    S_clean = np.std(clean_sample, ddof=1)
+    med_clean = np.median(clean_sample)
+    
+    print(f"Очищена вибірка (n={len(clean_sample)}):")
+    print(f"  x_clean = {x_clean:.2f} | S_clean = {S_clean:.2f} | Медіана = {med_clean:.2f}")
+    print(f"Зміна середнього: {abs(x_dirty - x_clean):.2f} МБ | Зміна медіани: {abs(med_dirty - med_clean):.2f} МБ")
+    
+    # Побудова Boxplot
+    plt.figure(figsize=(8, 5))
+    plt.boxplot([dirty_sample, clean_sample], tick_labels=['З викидами (dirty)', 'Очищена (clean)'], patch_artist=True)
+    plt.title("Блок 3: Порівняння вибірок до та після фільтрації викидів (Boxplot)")
+    plt.ylabel("Використання RAM, МБ")
+    plt.grid(True, linestyle='--', alpha=0.6)
+    plt.savefig("graphics/block3_boxplot.png", dpi=300)
+    plt.close()
+    print("-> Графік збережено в graphics/block3_boxplot.png\n")
 
 if __name__ == "__main__":
     run_block_1()
     run_block_2()
+    ram_sample = run_block_2()
+    run_block_3(ram_sample)
