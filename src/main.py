@@ -178,8 +178,55 @@ def run_block_3(base_sample):
     plt.close()
     print("-> Графік збережено в graphics/block3_boxplot.png\n")
 
+# =============================================================================
+# БЛОК 4: Професійна задача (Варіант 8: Лічильники контейнерів Docker)
+# =============================================================================
+def run_block_4():
+    print("=== БЛОК 4: Варіант 8 (Лічильники контейнерів Docker, n=300) ===")
+    n = 300
+    
+    # Моделюємо навантаження контейнерів Docker (наприклад, навантаження CPU у %: штатне ~45% + піки)
+    normal_load = np.random.normal(45, 12, int(n * 0.85))
+    peak_load = np.random.uniform(75, 98, n - len(normal_load))
+    docker_metrics = np.clip(np.concatenate([normal_load, peak_load]), 5, 100)
+    
+    # Інтервальний розподіл за Стерджесом: k = 1 + [3.322 * log10(300)] = 9
+    k = 1 + int(round(3.322 * math.log10(n)))
+    counts, bin_edges = np.histogram(docker_metrics, bins=k)
+    midpoints = (bin_edges[:-1] + bin_edges[1:]) / 2
+    rel_freqs = counts / n
+    
+    print(f"Кількість інтервалів за Стерджесом: k = {k}")
+    print(f"{'Інтервал навантаження (%)':<26} | {'Середина':<10} | {'Частота n_i':<12} | {'Частка w_i':<10}")
+    
+    # Рахуємо частку інтервалів із піковим навантаженням (де середина інтервалу > 75%)
+    peak_intervals = 0
+    for i in range(k):
+        interval_str = f"[{bin_edges[i]:.1f}; {bin_edges[i+1]:.1f})"
+        print(f"{interval_str:<26} | {midpoints[i]:<10.1f} | {counts[i]:<12} | {rel_freqs[i]:<10.3f}")
+        if midpoints[i] > 75.0:
+            peak_intervals += 1
+            
+    peak_ratio = (peak_intervals / k) * 100
+    print(f"\nКількість інтервалів із піковим навантаженням (>75%): {peak_intervals} з {k} ({peak_ratio:.1f}%)")
+    
+    # Полігон частот
+    plt.figure(figsize=(9, 5))
+    plt.hist(docker_metrics, bins=bin_edges, alpha=0.4, color='teal', edgecolor='black', label='Гістограма частот')
+    plt.plot(midpoints, counts, marker='s', color='darkorange', linewidth=2, label='Полігон частот')
+    plt.axvline(75.0, color='red', linestyle='--', label='Поріг пікового навантаження (75%)')
+    plt.title("Блок 4: Розподіл навантаження контейнерів Docker (n=300)")
+    plt.xlabel("Навантаження контейнера, %")
+    plt.ylabel("Абсолютна частота n_i")
+    plt.grid(True, linestyle='--', alpha=0.6)
+    plt.legend()
+    plt.savefig("graphics/block4_docker_polygon.png", dpi=300)
+    plt.close()
+    print("-> Графік збережено в graphics/block4_docker_polygon.png\n")
+
 if __name__ == "__main__":
     run_block_1()
     run_block_2()
     ram_sample = run_block_2()
     run_block_3(ram_sample)
+    run_block_4()
